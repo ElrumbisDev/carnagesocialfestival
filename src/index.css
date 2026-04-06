@@ -3,10 +3,10 @@
 /* ─── Design Tokens ─────────────────────────────────────────── */
 @theme {
   /* Colors */
-  --color-bg:           #0a0a14;
-  --color-surface:      #111124;
-  --color-surface-2:    #1a1a2e;
-  --color-border:       #2a2a40;
+  --color-bg:           #09091a;
+  --color-surface:      #111128;
+  --color-surface-2:    #1a1a38;
+  --color-border:       #2a2a48;
 
   --color-primary:      #FF3D2E;
   --color-primary-dark: #cc2e22;
@@ -35,12 +35,25 @@
   padding: 0;
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--color-bg);
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,61,46,0.07) 0%, transparent 60%);
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: 16px;

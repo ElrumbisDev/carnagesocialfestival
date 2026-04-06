@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import { Ticket, ArrowRight, Calendar, MapPin, Music, Users, ChevronDown } from 'lucide-react'
@@ -46,6 +46,50 @@ const EVENTS = [
 ]
 
 export default function Home() {
+  const playerRef = useRef<any>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    const START = 28
+    const END = 140
+
+    const initPlayer = () => {
+      if (playerRef.current) return
+      playerRef.current = new (window as any).YT.Player('yt-bg-iframe', {
+        events: {
+          onReady: (e: any) => {
+            e.target.playVideo()
+            intervalRef.current = setInterval(() => {
+              const t = e.target.getCurrentTime?.()
+              if (t !== undefined && t >= END) e.target.seekTo(START, true)
+            }, 500)
+          },
+          onStateChange: (e: any) => {
+            if (e.data === 0) { e.target.seekTo(START, true); e.target.playVideo() }
+          },
+        },
+      })
+    }
+
+    if ((window as any).YT?.Player) {
+      initPlayer()
+    } else {
+      const prev = (window as any).onYouTubeIframeAPIReady
+      ;(window as any).onYouTubeIframeAPIReady = () => { prev?.(); initPlayer() }
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        document.head.appendChild(tag)
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      playerRef.current?.destroy?.()
+      playerRef.current = null
+    }
+  }, [])
+
   return (
     <PageTransition>
 
@@ -55,61 +99,54 @@ export default function Home() {
       <section style={{
         minHeight: '100vh', backgroundColor: '#08080f',
         position: 'relative', overflow: 'hidden',
-        display: 'flex', alignItems: 'stretch',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {/* Blobs couleurs affiche */}
-        <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', top: '-160px', right: '-80px', width: '520px', height: '520px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,197,24,0.18) 0%, transparent 65%)', filter: 'blur(60px)' }} />
-          <div style={{ position: 'absolute', bottom: '-100px', left: '-60px', width: '460px', height: '460px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.14) 0%, transparent 65%)', filter: 'blur(60px)' }} />
-          <div style={{ position: 'absolute', top: '30%', left: '10%', width: '340px', height: '340px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,61,46,0.1) 0%, transparent 65%)', filter: 'blur(50px)' }} />
-          <div style={{ position: 'absolute', bottom: '5%', right: '15%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(96,165,250,0.1) 0%, transparent 65%)', filter: 'blur(50px)' }} />
+        {/* ── Fond vidéo YouTube ── */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}>
+          <iframe
+            id="yt-bg-iframe"
+            src="https://www.youtube.com/embed/-KqyXZjPy_g?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&iv_load_policy=3&modestbranding=1&start=28&enablejsapi=1&loop=0"
+            allow="autoplay; encrypted-media"
+            style={{
+              position: 'absolute', top: '50%', left: '50%',
+              width: 'max(100vw, 177.78vh)',
+              height: 'max(100vh, 56.25vw)',
+              transform: 'translate(-50%, -50%)',
+              border: 'none', pointerEvents: 'none',
+            }}
+          />
+          {/* Overlay sombre */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(8,8,15,0.55) 0%, rgba(8,8,15,0.45) 60%, rgba(8,8,15,0.75) 100%)' }} />
         </div>
 
         <div style={{
           maxWidth: '1320px', margin: '0 auto', width: '100%',
-          padding: '120px 40px 80px',
-          display: 'grid', gridTemplateColumns: '1fr 400px',
-          gap: '80px', alignItems: 'center',
+          padding: '0 40px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          textAlign: 'center',
           position: 'relative', zIndex: 1,
-        }} className="hero-grid">
+        }}>
 
-          {/* ── Texte ── */}
-          <div>
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '10px',
-                border: '1px solid rgba(245,197,24,0.35)',
-                backgroundColor: 'rgba(245,197,24,0.08)',
-                borderRadius: '999px', padding: '7px 18px', marginBottom: '36px',
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#F5C518', display: 'inline-block', boxShadow: '0 0 8px #F5C518' }} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.78rem', fontWeight: 600, color: '#F5C518', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Festival plein air · 5 & 6 Juin 2026
-              </span>
-            </motion.div>
-
-            {/* Titre gradient */}
-            <div style={{ marginBottom: '24px', overflow: 'hidden' }}>
-              <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.75, delay: 0.2, ease }}>
-                <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(3rem, 6.5vw, 6rem)', lineHeight: 0.95, letterSpacing: '-0.04em', margin: 0 }}>
-                  <span style={{ display: 'block', color: '#F0EDE8' }}>FESTIVAL</span>
-                  <span style={{ display: 'block', background: 'linear-gradient(90deg, #F5C518 0%, #FF8C00 45%, #FF3D2E 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>CARNAGE</span>
-                  <span style={{ display: 'block', background: 'linear-gradient(90deg, #FF3D2E 0%, #F5C518 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>SOCIAL</span>
-                </h1>
+          {/* ── Contenu centré ── */}
+          <div style={{ maxWidth: '800px', width: '100%' }}>
+            {/* Logo Carnage Social */}
+            <div style={{ marginBottom: '40px', overflow: 'hidden' }}>
+              <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.75, delay: 0.15, ease }}>
+                <img
+                  src="/images/logo-carnage-blanc.png"
+                  alt="Festival Carnage Social"
+                  style={{ width: 'clamp(280px, 55vw, 600px)', height: 'auto', display: 'block', margin: '0 auto' }}
+                />
               </motion.div>
             </div>
 
             {/* Ligne asso */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.55, delay: 0.5 }}
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', paddingLeft: '4px' }}
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.4 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '32px' }}
             >
-              <div style={{ width: '32px', height: '2px', background: 'linear-gradient(90deg, #F5C518, #FF3D2E)', borderRadius: '2px', flexShrink: 0 }} />
+              <div style={{ width: '24px', height: '2px', background: 'linear-gradient(90deg, #F5C518, #FF3D2E)', borderRadius: '2px', flexShrink: 0 }} />
               <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.95rem', color: '#8885A0' }}>par l'association</span>
               <img src="/images/logo.jpg" alt="Hole Right" style={{ height: '28px', width: '28px', borderRadius: '6px', objectFit: 'cover' }} />
               <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '0.95rem', color: '#F0EDE8' }}>Hole Right</span>
@@ -119,7 +156,7 @@ export default function Home() {
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.6 }}
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '1rem', color: '#8885A0', lineHeight: 1.8, maxWidth: '460px', marginBottom: '44px' }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '1rem', color: '#8885A0', lineHeight: 1.8, maxWidth: '500px', margin: '0 auto 44px' }}
             >
               Deux jours de concerts en plein air dans le bocage normand.
               Pop, Rock, Techno — une programmation éclectique portée par une équipe indépendante et passionnée.
@@ -129,7 +166,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.7 }}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '52px' }}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '52px', justifyContent: 'center' }}
             >
               {/* Bouton principal — police corrigée */}
               <motion.div whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
@@ -174,7 +211,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.9 }}
-              style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}
             >
               {[
                 { icon: <Calendar size={14} />, text: '5 & 6 Juin 2026', color: '#F5C518' },
@@ -200,31 +237,6 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* ── Affiche ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.25, ease }}
-            whileHover={{ y: -8, rotate: 0.5 }}
-            className="hero-poster"
-            style={{ position: 'relative', cursor: 'pointer' }}
-          >
-            <div aria-hidden style={{
-              position: 'absolute', inset: '-20px', borderRadius: '28px',
-              background: 'conic-gradient(from 180deg at 50% 50%, #F5C518 0deg, #FF3D2E 90deg, #22C55E 180deg, #60a5fa 270deg, #F5C518 360deg)',
-              filter: 'blur(40px)', opacity: 0.25,
-              transition: 'opacity 0.4s ease',
-            }} className="poster-halo" />
-            <motion.div
-              whileHover={{ boxShadow: '0 32px 100px rgba(245,197,24,0.25), 0 12px 40px rgba(0,0,0,0.8)' }}
-              style={{
-                position: 'relative', borderRadius: '20px', overflow: 'hidden',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 16px 60px rgba(0,0,0,0.6)',
-              }}
-            >
-              <img src="/images/carnage-social.jpeg" alt="Affiche Festival Carnage Social 2026" style={{ width: '100%', display: 'block' }} />
-            </motion.div>
-          </motion.div>
         </div>
 
         {/* Scroll indicator */}
@@ -239,11 +251,9 @@ export default function Home() {
         </motion.div>
 
         <style>{`
-          @media (max-width: 900px) {
-            .hero-grid { grid-template-columns: 1fr !important; padding: 100px 24px 60px !important; gap: 40px !important; }
-            .hero-poster { max-width: 280px; margin: 0 auto; }
+          @media (max-width: 768px) {
+            .hero-text-col { padding: 100px 24px 60px !important; }
           }
-          .hero-poster:hover .poster-halo { opacity: 0.5 !important; }
         `}</style>
       </section>
 
